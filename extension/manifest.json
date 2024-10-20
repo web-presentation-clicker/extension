@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "Untitled Presentation Clicker Extension",
+  "description": "uhhh it does the thing, with the thing",
+  "version": "0.0",
+  "action": {
+    "default_popup": "panel/panel.html",
+    "default_icon": "logo.png"
+  },
+  "content_scripts": [
+	{
+		"matches": ["https://docs.google.com/presentation/*"],
+		"js": ["content-clicker.js"],
+		"run_at": "document_end"
+	}
+  ]
+}
+

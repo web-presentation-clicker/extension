@@ -7,6 +7,10 @@
     "default_popup": "panel/panel.html",
     "default_icon": "logo.png"
   },
+  "background": {
+    "scripts": ["present.js"],
+    "type": "module"
+  },
   "content_scripts": [
 	{
 		"matches": ["https://docs.google.com/presentation/*"],

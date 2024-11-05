@@ -1,31 +1,100 @@
-// Moved below script from panel.html to here because Chrome extension
-// doesn't like inline scripting
-document.addEventListener("DOMContentLoaded", function() {
-    let qrcode = new QRCode(document.getElementById("qrcode"), {
-        width : 100,
-        height : 100
-    });
+const SESSION_STATE = "sessionstate";
+const MAKE_SESSION = "makesession";
 
-    function makeCode () {
-        let elText = document.getElementById("text");
+// session states
+const SESSION_STATE_NULL = -1;          // no session ever existed
+const SESSION_STATE_DEAD = 0;           // session existed, but died
+const SESSION_STATE_CONNECTING = 1;     // connecting to server
+const SESSION_STATE_ESTABLISHED = 2;    // requesting session from server
+const SESSION_STATE_ACTIVE = 3;         // session exists on server, waiting for clicker
+const SESSION_STATE_PRESENTING = 4;     // clicker sent hello, ready to present
 
-        if (!elText.value) {
-            alert("Input a text");
-            elText.focus();
-            return;
+const message = document.getElementById("message");
+const toggle_qr = document.getElementById("toggle-qr");
+const qrcode_element = document.getElementById("qrcode");
+const qrcode = new QRCode(document.getElementById("qrcode"), {
+    width : 100,
+    height : 100
+});
+
+let qr_toggled = false;
+let qr_generated = false;
+
+message.innerText = "Initializing...";
+
+function on_session_state(s) {
+    // show/hide qr code control
+    if (s.exists && s.state != SESSION_STATE_ACTIVE) {
+        // show qr toggle
+        if (qr_toggled) {
+            qrcode_element.style.display = "block";
+            toggle_qr.textContent = "Hide QR Code";
+        } else {
+            qrcode_element.style.display = "none";
+            toggle_qr.textContent = "Show QR Code";
         }
-        qrcode.makeCode(elText.value);
+
+        // make sure qr code exists before showing button
+        if (!qr_generated) {
+            console.log("generating qr: " + s.url);
+            qrcode.makeCode(s.url);
+            qr_generated = true;
+        }
+
+        toggle_qr.style.display = "block";
+    } else {
+        // hide qr toggle
+        toggle_qr.style.display = "none";
     }
 
-    makeCode();
+    // show connection state to user
+    switch (s.state) {
+        case SESSION_STATE_NULL:
+        case SESSION_STATE_DEAD: {
+            message.innerText = "Disconnected";
+        } break;
+        case SESSION_STATE_CONNECTING: {
+            message.innerText = s.exists ? "Reconnecting..." : "Connecting...";
+        } break;
+        case SESSION_STATE_ESTABLISHED: {
+            message.innerText = s.exists ? "Resuming session..." : "Requesting new session...";
+        } break;
+        case SESSION_STATE_ACTIVE: {
+            console.log("generating qr: " + s.url);
+            qrcode.makeCode(s.url);
+            qr_generated = true;
+            qrcode_element.style.display = "block";
+            message.innerText = "Scan the QR Code on your phone";
+        } break;
+        case SESSION_STATE_PRESENTING: {
+            message.innerText = "Connected";
+        } break;
+    }
+}
 
-    $("#text")
-        .on("blur", function () {
-            makeCode();
-        })
-        .on("keydown", function (e) {
-            if (e.keyCode == 13) {
-                makeCode();
-            }
-        });
-});
+toggle_qr.onclick = (e) => {
+    qr_toggled = !qr_toggled;
+
+    if (qr_toggled) {
+        qrcode_element.style.display = "block";
+        toggle_qr.textContent = "Hide QR Code";
+    } else {
+        qrcode_element.style.display = "none";
+        toggle_qr.textContent = "Show QR Code";
+    }
+};
+
+browser.runtime.onMessage.addListener(
+    (msg, sender, resp) => {
+        switch (msg.event) {
+            case SESSION_STATE: {
+                on_session_state(msg.session);
+            } break;
+        }
+    });
+
+// tell background service to get a working session
+browser.runtime.sendMessage({event: MAKE_SESSION})
+    .then((s) => {
+        on_session_state(s);
+    });

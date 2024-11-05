@@ -4,10 +4,12 @@
     <meta char="UTF-8">
     <title>Clicker Presentation Remote...thing</title>
     <script type="text/javascript" src="qrcode.js"></script>
-    <script type="text/javascript" src="panel.js"></script>
+    <script type="text/javascript" src="panel.js" defer></script>
 </head>
 <body>
-    <input id="text" type="text" value="./bare_client/clicker.html/" style="width:80%" /><br />
+    <h1>Presentation Clicker</h1>
+    <div id="message"></div>
+    <button id="toggle-qr" style="display: none;">Show QR Code</button>
     <div id="qrcode" style="width:100px; height:100px; margin-top:15px;"></div>
 </body>
 </html>

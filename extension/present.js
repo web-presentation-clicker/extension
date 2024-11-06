@@ -20,6 +20,7 @@ let session = {
 let uuid_str = null;
 let uuid_bytes = null;
 let uuid_b64 = null;
+let nonce = 0;
 
 // devel
 // const baseURL = 'http://localhost:6969';
@@ -85,8 +86,11 @@ function encode_b64(bytes) {
 
 
 function send_click(e) {
-    // for now just send to all registered content clickers (TODO)
-    content_clickers.forEach((port) => port.postMessage({event: e}))
+    if (content_clickers.length == 0) console.warn("no content clickers to click");
+    
+    // for now just send to all registered content clickers
+    content_clickers.forEach((port) => port.postMessage({event: e, "nonce": nonce}))
+    nonce++;
 }
 
 
@@ -279,10 +283,14 @@ browser.runtime.onMessage.addListener(
     });
 
 browser.runtime.onConnect.addListener((port) => {
+    if (port.name != "clicker") return;
+
     console.log("registering content clicker");
-    port.onDisconnect.addListener(() => {
+    port.onDisconnect.addListener((port) => {
+        console.log("content clicker connection died:", port.error);
         let index = content_clickers.indexOf(port);
         if (index != -1) content_clickers.splice(index, 1);
     });
+
     content_clickers.push(port);
 });

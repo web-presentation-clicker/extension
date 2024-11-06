@@ -51,7 +51,7 @@ function on_session_state(s) {
     switch (s.state) {
         case SESSION_STATE_NULL:
         case SESSION_STATE_DEAD: {
-            message.innerText = "Disconnected";
+            message.innerText = s.error != null ? s.error : "Disconnected";
         } break;
         case SESSION_STATE_CONNECTING: {
             message.innerText = s.exists ? "Reconnecting..." : "Connecting...";

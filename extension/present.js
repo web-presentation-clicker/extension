@@ -120,9 +120,8 @@ const onmessage_connected = e => {
                 error = e.data.substr(5);
                 console.error("error from server: " + error);
 
-                // todo: send error
-
                 // assume explicit error from server means the session is no longer usable
+                session.error = error;
                 session.exists = false;
                 session.state = SESSION_STATE_DEAD;
                 send_session_state();
@@ -164,8 +163,7 @@ const onmessage_init = e => {
         console.error('unknown event from server: ' + e.data);
     }
 
-    // todo: send error
-
+    session.error = error;
     session.exists = false;
     session.state = SESSION_STATE_DEAD;
     send_session_state();
@@ -194,8 +192,7 @@ const onmessage_resume = e => {
         console.error('unknown event from server: ' + e.data);
     }
 
-    // todo: send error
-
+    session.error = error;
     session.exists = false;
     session.state = SESSION_STATE_DEAD;
     send_session_state();
@@ -236,6 +233,7 @@ const onclose_init = e => {
 
     // if not an explicit death, mark dead and send event
     if (session.state != SESSION_STATE_DEAD) {
+        session.error = "Lost connection";
         session.state = SESSION_STATE_DEAD;
         send_session_state();
     }
@@ -247,7 +245,7 @@ const onclose_init = e => {
 function new_session() {
     if (ws != null) ws.close();
     ws = new WebSocket(baseWSURL + "/api/v1/ws");
-    session = {state: SESSION_STATE_CONNECTING, exists: false};
+    session = {state: SESSION_STATE_CONNECTING, exists: false, error: null};
     ws.onopen = onopen_init;
     ws.onmessage = onmessage_init;
     ws.onerror = onerror_init;
@@ -258,6 +256,7 @@ function new_session() {
 function resume_session() {
     if (ws != null) ws.close();
     ws = new WebSocket(baseWSURL + "/api/v1/ws");
+    session.error = null;
     session.state = SESSION_STATE_CONNECTING;
     ws.onopen = onopen_resume;
     ws.onmessage = onmessage_resume;

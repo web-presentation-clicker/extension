@@ -17,6 +17,8 @@ const qrcode = new QRCode(document.getElementById("qrcode"), {
     height : 300
 });
 
+if (typeof browser === 'undefined') var browser = chrome;
+
 let qr_toggled = false;
 let qr_generated = false;
 

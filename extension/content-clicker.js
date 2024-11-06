@@ -1,6 +1,8 @@
 const CLICKER_NEXT_SLIDE = 2;
 const CLICKER_PREV_SLIDE = 3;
 
+if (typeof browser === 'undefined') var browser = chrome;
+
 const mkRightArrowEvent = (type) => new KeyboardEvent(type, {'key': 'ArrowRight', 'code': 'ArrowRight', 'keyCode': 39});
 const mkLeftArrowEvent = (type) => new KeyboardEvent(type, {'key': 'ArrowLeft', 'code': 'ArrowLeft', 'keyCode': 38});
 

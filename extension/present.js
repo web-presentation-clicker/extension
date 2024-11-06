@@ -11,6 +11,8 @@ const SESSION_STATE_ESTABLISHED = 2;    // requesting session from server
 const SESSION_STATE_ACTIVE = 3;         // session exists on server, waiting for clicker
 const SESSION_STATE_PRESENTING = 4;     // clicker sent hello, ready to present
 
+if (typeof browser === 'undefined') var browser = chrome;
+
 let ws = null;
 let session = {
     state: SESSION_STATE_NULL,

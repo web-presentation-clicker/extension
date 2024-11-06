@@ -13,8 +13,8 @@ const message = document.getElementById("message");
 const toggle_qr = document.getElementById("toggle-qr");
 const qrcode_element = document.getElementById("qrcode");
 const qrcode = new QRCode(document.getElementById("qrcode"), {
-    width : 100,
-    height : 100
+    width : 300,
+    height : 300
 });
 
 let qr_toggled = false;

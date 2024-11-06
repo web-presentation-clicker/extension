@@ -273,6 +273,12 @@ browser.runtime.onMessage.addListener(
         console.log("bg onmessage", msg);
         switch (msg.event) {
             case MAKE_SESSION: {
+                if (content_clickers.length == 0) {
+                    console.log("no content clickers, refusing to start session");
+                    respond(null);
+                    return;
+                }
+
                 // create a session or return the currently active one
                 if (!session.exists) new_session();
                 else if (session.state == SESSION_STATE_DEAD) resume_session();

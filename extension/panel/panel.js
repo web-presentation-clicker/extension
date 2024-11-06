@@ -96,5 +96,9 @@ browser.runtime.onMessage.addListener(
 // tell background service to get a working session
 browser.runtime.sendMessage({event: MAKE_SESSION})
     .then((s) => {
+        if (s == null) {
+            message.innerText = "No presentation found";
+            return;
+        }
         on_session_state(s);
     });

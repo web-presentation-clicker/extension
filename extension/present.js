@@ -1,5 +1,7 @@
-const SESSION_STATE = "sessionstate";
-const MAKE_SESSION = "makesession";
+const SESSION_STATE = 0;
+const MAKE_SESSION = 1;
+const CLICKER_NEXT_SLIDE = 2;
+const CLICKER_PREV_SLIDE = 3;
 
 // session states
 const SESSION_STATE_NULL = -1;          // no session ever existed
@@ -26,6 +28,8 @@ let uuid_b64 = null;
 // production
 const baseURL = 'https://on-stage.click';
 const baseWSURL = 'wss://on-stage.click';
+
+let content_clickers = [];
 
 
 // utils
@@ -80,6 +84,12 @@ function encode_b64(bytes) {
 }
 
 
+function send_click(e) {
+    // for now just send to all registered content clickers (TODO)
+    content_clickers.forEach((port) => port.postMessage({event: e}))
+}
+
+
 // message event handler after connection is established, handles events
 const onmessage_connected = e => {
     switch (e.data) {
@@ -92,11 +102,13 @@ const onmessage_connected = e => {
         } break;
 
         case "next_slide": {
-            // todo
+            console.log("next slide");
+            send_click(CLICKER_NEXT_SLIDE);
         } break;
 
         case "prev_slide": {
-            // todo
+            console.log("prev slide");
+            send_click(CLICKER_PREV_SLIDE);
         } break;
 
         default: {
@@ -206,7 +218,7 @@ const onopen_resume = () => {
 
     // ask to resume session
     ws.send('v1');
-    ws.send('resume: ' + uuid_r);
+    ws.send('resume: ' + uuid_str);
 };
 
 
@@ -265,3 +277,12 @@ browser.runtime.onMessage.addListener(
             } break;
         }
     });
+
+browser.runtime.onConnect.addListener((port) => {
+    console.log("registering content clicker");
+    port.onDisconnect.addListener(() => {
+        let index = content_clickers.indexOf(port);
+        if (index != -1) content_clickers.splice(index, 1);
+    });
+    content_clickers.push(port);
+});

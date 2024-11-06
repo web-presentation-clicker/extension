@@ -1,5 +1,5 @@
-const SESSION_STATE = "sessionstate";
-const MAKE_SESSION = "makesession";
+const SESSION_STATE = 0;
+const MAKE_SESSION = 1;
 
 // session states
 const SESSION_STATE_NULL = -1;          // no session ever existed

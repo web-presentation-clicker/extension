@@ -1,3 +1,5 @@
+const CLICKER_NEXT_SLIDE = 2;
+const CLICKER_PREV_SLIDE = 3;
 
 const mkRightArrowEvent = (type) => new KeyboardEvent(type, {'key': 'ArrowRight', 'code': 'ArrowRight', 'keyCode': 39});
 const mkLeftArrowEvent = (type) => new KeyboardEvent(type, {'key': 'ArrowLeft', 'code': 'ArrowLeft', 'keyCode': 38});
@@ -12,6 +14,7 @@ function getPresentationDoc() {
 }
 
 function nextSlide() {
+    console.log("advancing slide");
     // simulate right arrow
     let doc = getPresentationDoc();
     if (doc == null) return false;
@@ -22,6 +25,7 @@ function nextSlide() {
 }
 
 function prevSlide() {
+    console.log("going back a slide");
     // simulate left arrow
     let doc = getPresentationDoc();
     if (doc == null) return false;
@@ -31,14 +35,17 @@ function prevSlide() {
     // keypress is not sent for arrow keys
 }
 
-setInterval(() => {
-    console.log('advancing slide');
-    nextSlide();
-}, 1000);
+let port = browser.runtime.connect({name: "placeholder"}); // todo
 
-setInterval(() => {
-    console.log('previous slide');
-    prevSlide();
-}, 1100);
-
-
+console.log("registering onMessage listener");
+port.onMessage.addListener(
+    (msg) => {
+        switch (msg.event) {
+            case CLICKER_NEXT_SLIDE: {
+                nextSlide();
+            } break;
+            case CLICKER_PREV_SLIDE: {
+                prevSlide();
+            } break;
+        }
+    });

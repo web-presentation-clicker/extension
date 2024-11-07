@@ -8,20 +8,21 @@ const SESSION_STATE_NULL = -1;          // no session ever existed
 const SESSION_STATE_DEAD = 0;           // session existed, but died
 const SESSION_STATE_CONNECTING = 1;     // connecting to server
 const SESSION_STATE_ESTABLISHED = 2;    // requesting session from server
-const SESSION_STATE_ACTIVE = 3;         // session exists on server, waiting for clicker
-const SESSION_STATE_PRESENTING = 4;     // clicker sent hello, ready to present
+const SESSION_STATE_ACTIVE = 3;         // session exists on server
 
 if (typeof browser === 'undefined') var browser = chrome;
 
 let ws = null;
 let session = {
     state: SESSION_STATE_NULL,
-    exists: false
+    exists: false,
+    presenting: false
 };
 
 let uuid_str = null;
 let uuid_bytes = null;
 let uuid_b64 = null;
+let reconnect = false;
 let nonce = 0;
 
 // devel
@@ -101,8 +102,8 @@ const onmessage_connected = e => {
     switch (e.data) {
         case "hello": {
             console.log("pinged by clicker");
-            if (session.state == SESSION_STATE_ACTIVE) {
-                session.state = SESSION_STATE_PRESENTING;
+            if (!session.presenting) {
+                session.presenting = true;
                 send_session_state();
             }
         } break;
@@ -240,14 +241,19 @@ const onclose_init = e => {
         send_session_state();
     }
 
-    // todo: auto-resume if session still exists
+    if (session.exists && reconnect) {
+        console.log('resuming after lost connection');
+        resume_session();
+    }
 };
 
 
 function new_session() {
+    reconnect = false;
     if (ws != null) ws.close();
+    reconnect = true;
     ws = new WebSocket(baseWSURL + "/api/v1/ws");
-    session = {state: SESSION_STATE_CONNECTING, exists: false, error: null};
+    session = {state: SESSION_STATE_CONNECTING, exists: false, error: null, presenting: false};
     ws.onopen = onopen_init;
     ws.onmessage = onmessage_init;
     ws.onerror = onerror_init;
@@ -256,7 +262,9 @@ function new_session() {
 }
 
 function resume_session() {
+    reconnect = false;
     if (ws != null) ws.close();
+    reconnect = true;
     ws = new WebSocket(baseWSURL + "/api/v1/ws");
     session.error = null;
     session.state = SESSION_STATE_CONNECTING;
@@ -297,6 +305,12 @@ browser.runtime.onConnect.addListener((port) => {
         console.log("content clicker connection died:", port.error);
         let index = content_clickers.indexOf(port);
         if (index != -1) content_clickers.splice(index, 1);
+
+        if (content_clickers.length == 0 && ws != null) {
+            console.log("killing socket because no presentations to click");
+            reconnect = false;
+            ws.close();
+        }
     });
 
     content_clickers.push(port);

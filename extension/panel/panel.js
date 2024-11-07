@@ -6,8 +6,7 @@ const SESSION_STATE_NULL = -1;          // no session ever existed
 const SESSION_STATE_DEAD = 0;           // session existed, but died
 const SESSION_STATE_CONNECTING = 1;     // connecting to server
 const SESSION_STATE_ESTABLISHED = 2;    // requesting session from server
-const SESSION_STATE_ACTIVE = 3;         // session exists on server, waiting for clicker
-const SESSION_STATE_PRESENTING = 4;     // clicker sent hello, ready to present
+const SESSION_STATE_ACTIVE = 3;         // session exists on server
 
 const message = document.getElementById("message");
 const toggle_qr = document.getElementById("toggle-qr");
@@ -26,7 +25,7 @@ message.innerText = "Initializing...";
 
 function on_session_state(s) {
     // show/hide qr code control
-    if (s.exists && s.state != SESSION_STATE_ACTIVE) {
+    if (s.exists && s.presenting) {
         // show qr toggle
         if (qr_toggled) {
             qrcode_element.style.display = "block";
@@ -62,14 +61,18 @@ function on_session_state(s) {
             message.innerText = s.exists ? "Resuming session..." : "Requesting new session...";
         } break;
         case SESSION_STATE_ACTIVE: {
+            // don't show QR if already presenting
+            if (s.presenting) {
+                message.innerText = "Connected";
+                return;
+            }
+
+            // display qr
             console.log("generating qr: " + s.url);
             qrcode.makeCode(s.url);
             qr_generated = true;
             qrcode_element.style.display = "block";
             message.innerText = "Scan the QR Code on your phone";
-        } break;
-        case SESSION_STATE_PRESENTING: {
-            message.innerText = "Connected";
         } break;
     }
 }

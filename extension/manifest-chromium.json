@@ -1,10 +1,10 @@
 {
   "manifest_version": 3,
-  "name": "Untitled Presentation Clicker Extension",
-  "description": "uhhh it does the thing, with the thing",
-  "version": "0.0",
+  "name": "Web Presentation Clicker (on-stage.click)",
+  "description": "Control your slideshow presentation with your phone in the simplest way possible. No app required.",
+  "version": "0.1.0",
   "action": {
-    "default_popup": "panel/panel.html",
+    "default_popup": "panel/panel.html"
   },
   "icons": {
     "16": "icon16.png",

@@ -69,7 +69,7 @@ function connect() {
 r_int = setInterval(() => {
     let old_port = port;
     connect();
-    old_port.disconnect();
+    setTimeout(old_port.disconnect, 5000);  // chrome race condition
 }, 25000);
 
 // initial connection

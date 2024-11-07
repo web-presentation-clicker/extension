@@ -5,7 +5,34 @@
   "version": "0.0",
   "action": {
     "default_popup": "panel/panel.html",
-    "default_icon": "logo.png"
+    "theme_icons": [
+      {
+        "dark": "icon-light/icon16.png",
+        "light": "icon-dark/icon16.png",
+        "size": 16
+      },
+      {
+        "dark": "icon-light/icon32.png",
+        "light": "icon-dark/icon32.png",
+        "size": 32
+      },
+      {
+        "dark": "icon-light/icon48.png",
+        "light": "icon-dark/icon48.png",
+        "size": 48
+      },
+      {
+        "dark": "icon-light/icon128.png",
+        "light": "icon-dark/icon128.png",
+        "size": 128
+      }
+    ]
+  },
+  "icons": {
+    "16": "icon16.png",
+    "32": "icon32.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
   },
   "background": {
     "scripts": ["present.js"],

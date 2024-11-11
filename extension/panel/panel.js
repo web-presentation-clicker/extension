@@ -1,5 +1,6 @@
 const SESSION_STATE = 0;
 const MAKE_SESSION = 1;
+const END_SESSION = 4;
 
 // session states
 const SESSION_STATE_NULL = -1;          // no session ever existed
@@ -10,6 +11,7 @@ const SESSION_STATE_ACTIVE = 3;         // session exists on server
 
 const message = document.getElementById("message");
 const toggle_qr = document.getElementById("toggle-qr");
+const end_session_b = document.getElementById("end-session");
 const qrcode_element = document.getElementById("qrcode");
 const qrcode = new QRCode(document.getElementById("qrcode"), {
     width : 300,
@@ -24,28 +26,36 @@ let qr_generated = false;
 message.innerText = "Initializing...";
 
 function on_session_state(s) {
-    // show/hide qr code control
-    if (s.exists && s.presenting) {
-        // show qr toggle
-        if (qr_toggled) {
-            qrcode_element.style.display = "block";
-            toggle_qr.textContent = "Hide QR Code";
+    if (s.exists) {
+
+        // show/hide qr code control
+        if (s.presenting) {
+            // show qr toggle
+            if (qr_toggled) {
+                qrcode_element.style.display = "block";
+                toggle_qr.textContent = "Hide QR Code";
+            } else {
+                qrcode_element.style.display = "none";
+                toggle_qr.textContent = "Show QR Code";
+            }
+    
+            // make sure qr code exists before showing button
+            if (!qr_generated) {
+                console.log("generating qr: " + s.url);
+                qrcode.makeCode(s.url);
+                qr_generated = true;
+            }
+    
+            toggle_qr.style.display = "block";
         } else {
-            qrcode_element.style.display = "none";
-            toggle_qr.textContent = "Show QR Code";
+            // hide qr toggle
+            toggle_qr.style.display = "none";
         }
 
-        // make sure qr code exists before showing button
-        if (!qr_generated) {
-            console.log("generating qr: " + s.url);
-            qrcode.makeCode(s.url);
-            qr_generated = true;
-        }
-
-        toggle_qr.style.display = "block";
+        end_session_b.style.display = "block"
     } else {
-        // hide qr toggle
-        toggle_qr.style.display = "none";
+        qrcode_element.style.display = "none"
+        end_session_b.style.display = "none"
     }
 
     // show connection state to user
@@ -88,6 +98,8 @@ toggle_qr.onclick = (e) => {
         toggle_qr.textContent = "Show QR Code";
     }
 };
+
+end_session_b.onclick = (e) => browser.runtime.sendMessage({event: END_SESSION});
 
 browser.runtime.onMessage.addListener(
     (msg, sender, resp) => {

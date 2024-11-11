@@ -2,6 +2,7 @@ const SESSION_STATE = 0;
 const MAKE_SESSION = 1;
 const CLICKER_NEXT_SLIDE = 2;
 const CLICKER_PREV_SLIDE = 3;
+const END_SESSION = 4;
 
 // session states
 const SESSION_STATE_NULL = -1;          // no session ever existed
@@ -12,12 +13,15 @@ const SESSION_STATE_ACTIVE = 3;         // session exists on server
 
 if (typeof browser === 'undefined') var browser = chrome;
 
-let ws = null;
-let session = {
+const new_null_session = () => ({
     state: SESSION_STATE_NULL,
     exists: false,
+    error: null,
     presenting: false
-};
+});
+
+let ws = null;
+let session = new_null_session();
 
 let uuid_str = null;
 let uuid_bytes = null;
@@ -235,7 +239,7 @@ const onclose_init = e => {
     console.log('death');
 
     // if not an explicit death, mark dead and send event
-    if (session.state != SESSION_STATE_DEAD) {
+    if (session.state > SESSION_STATE_DEAD) {
         session.error = "Lost connection";
         session.state = SESSION_STATE_DEAD;
         send_session_state();
@@ -249,11 +253,11 @@ const onclose_init = e => {
 
 
 function new_session() {
-    reconnect = false;
-    if (ws != null) ws.close();
+    close_connection();
     reconnect = true;
     ws = new WebSocket(baseWSURL + "/api/v1/ws");
-    session = {state: SESSION_STATE_CONNECTING, exists: false, error: null, presenting: false};
+    session = new_null_session();
+    session.state = SESSION_STATE_CONNECTING;
     ws.onopen = onopen_init;
     ws.onmessage = onmessage_init;
     ws.onerror = onerror_init;
@@ -262,8 +266,7 @@ function new_session() {
 }
 
 function resume_session() {
-    reconnect = false;
-    if (ws != null) ws.close();
+    close_connection();
     reconnect = true;
     ws = new WebSocket(baseWSURL + "/api/v1/ws");
     session.error = null;
@@ -272,6 +275,25 @@ function resume_session() {
     ws.onmessage = onmessage_resume;
     ws.onerror = onerror_init;
     ws.onclose = onclose_init;
+    send_session_state();
+}
+
+function close_connection() {
+    reconnect = false;
+    if (ws != null) {
+        ws.close();
+        ws = null;
+    }
+}
+
+function end_session() {
+    console.log("ending session");
+
+    if (ws != null && ws.readyState == ws.OPEN) ws.send('end');
+    session.state = SESSION_STATE_DEAD;
+    close_connection();
+    session = new_null_session();
+    session.error = "Session Ended";
     send_session_state();
 }
 
@@ -292,6 +314,10 @@ browser.runtime.onMessage.addListener(
                 // create a session or return the currently active one
                 if (!session.exists) new_session();
                 else if (session.state == SESSION_STATE_DEAD) resume_session();
+                respond(session);
+            } break;
+            case END_SESSION: {
+                end_session();
                 respond(session);
             } break;
         }

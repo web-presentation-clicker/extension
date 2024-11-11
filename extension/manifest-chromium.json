@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Web Presentation Clicker (on-stage.click)",
   "description": "Control your slideshow presentation with your phone in the simplest way possible. No app required.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "action": {
     "default_popup": "panel/panel.html"
   },

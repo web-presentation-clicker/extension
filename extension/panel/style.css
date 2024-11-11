@@ -1,6 +1,26 @@
+/* light theme */
+:root {
+    --bg-color: #F0F0FF;
+    --text-color: #112;
+    --button-color: #CCD;
+    --button-hover-color: #C0C0D0;
+    --button-active-color: #BBD;
+}
+
+/* dark theme */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg-color: #202024;
+        --text-color: #E0E0E4;
+        --button-color: #404044;
+        --button-hover-color: #53535d;
+        --button-active-color: #667;
+    }
+}
+
 body {
-    background-color: #F0F0F4;
-    color: #111;
+    background-color: var(--bg-color);
+    color: var(--text-color);
     font-family: sans-serif;
     width: 360px;
     padding: 5px;
@@ -18,10 +38,8 @@ h1 {
     margin-bottom: 1rem;
 }
 
-#toggle-qr {
-}
-
 #qrcode {
+    animation: qr-fly-out 0.1s ease-out;
     background-color: #FFF;
     border-radius: 25px;
 
@@ -36,13 +54,39 @@ h1 {
 }
 
 button {
+    transition: background-color .2s ease-in;
+    background-color: var(--button-color);
+    color: var(--text-color);
+
+    border-style: none;
+    border-radius: 5px;
+
+    padding: 10px;
+
     margin-top: 10px;
     margin-bottom: 10px;
+
+    cursor: pointer;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
-@media (prefers-color-scheme: dark) {
-    body {
-        background-color: #202024;
-        color: #E0E0E4;
+button:hover {
+    transition: background-color .2s ease-out;
+    background-color: var(--button-hover-color);
+}
+
+button:active {
+    transition: background-color .05s ease-out;
+    background-color: var(--button-active-color);
+}
+
+
+@keyframes qr-fly-out {
+    from {
+        filter: blur(10px);
+        opacity: 0%;
     }
 }

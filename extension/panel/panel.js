@@ -69,7 +69,7 @@ function on_session_state(s) {
     switch (s.state) {
         case SESSION_STATE_NULL:
         case SESSION_STATE_DEAD: {
-            message.innerText = s.error != null ? s.error : "Disconnected";
+            message.innerText = s.error != null ? s.error : "Not Connected";
         } break;
         case SESSION_STATE_CONNECTING: {
             message.innerText = s.exists ? "Reconnecting..." : "Connecting...";
@@ -80,14 +80,14 @@ function on_session_state(s) {
         case SESSION_STATE_ACTIVE: {
             // don't show QR if already presenting
             if (s.presenting) {
-                message.innerText = "Connected";
+                message.innerText = "Connected!";
                 return;
             }
 
             // display qr
             generate_qr(s);
             unhide(qrcode_element);
-            message.innerText = "Scan the QR Code on your phone";
+            message.innerText = "Scan the QR Code with your phone.";
         } break;
     }
 }
@@ -115,7 +115,7 @@ browser.runtime.onMessage.addListener(
 browser.runtime.sendMessage({event: MAKE_SESSION})
     .then((s) => {
         if (s == null) {
-            message.innerText = "No presentation found";
+            message.innerHTML = "No presentation found. Supported sites:<br><ul><li>Google Slides</li></ul>"
             return;
         }
         on_session_state(s);

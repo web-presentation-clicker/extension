@@ -63,6 +63,7 @@ function on_session_state(s) {
     } else {
         hide(qrcode_element);
         hide(end_session_b);
+        hide(toggle_qr);
     }
 
     // show connection state to user
@@ -101,6 +102,7 @@ end_session_b.onclick = (e) => browser.runtime.sendMessage({event: END_SESSION})
 
 hide(toggle_qr);
 hide(qrcode_element);
+hide(end_session_b);
 
 browser.runtime.onMessage.addListener(
     (msg, sender, resp) => {

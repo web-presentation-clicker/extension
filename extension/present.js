@@ -11,7 +11,8 @@ const SESSION_STATE_CONNECTING = 1;     // connecting to server
 const SESSION_STATE_ESTABLISHED = 2;    // requesting session from server
 const SESSION_STATE_ACTIVE = 3;         // session exists on server
 
-if (typeof browser === 'undefined') var browser = chrome;
+const is_chrome = typeof browser === 'undefined';
+if (is_chrome) var browser = chrome;
 
 const new_null_session = () => ({
     state: SESSION_STATE_NULL,
@@ -243,6 +244,7 @@ function new_session() {
     ws.onerror = onerror_init;
     ws.onclose = onclose_init;
     send_session_state();
+    start_keepalive();
 }
 
 function resume_session() {
@@ -256,6 +258,7 @@ function resume_session() {
     ws.onerror = onerror_init;
     ws.onclose = onclose_init;
     send_session_state();
+    start_keepalive();
 }
 
 function close_connection() {
@@ -275,9 +278,30 @@ function end_session() {
     session = new_null_session();
     session.error = "Session Ended";
     send_session_state();
+    stop_keepalive();
 }
 
 const send_session_state = () => browser.runtime.sendMessage({event: SESSION_STATE, "session": session});
+
+
+let keepalive_interval = null;
+function keepalive() {
+    // ping server through websocket so extension doesn't die
+    if (ws != null && session.state >= SESSION_STATE_ACTIVE) {
+        console.log("pinging server");
+        ws.send('A');
+    }
+}
+
+function start_keepalive() {
+    if (!is_chrome) return;  // issue only affects chrome
+    if (keepalive_interval != null) clearInterval(keepalive_interval);
+    keepalive_interval = setInterval(keepalive, 20000);
+}
+
+function stop_keepalive() {
+    if (keepalive_interval != null) clearInterval(keepalive_interval);
+}
 
 
 browser.runtime.onMessage.addListener(
@@ -318,8 +342,8 @@ browser.runtime.onConnect.addListener((port) => {
 
         if (content_clickers.length == 0 && ws != null) {
             console.log("killing socket because no presentations to click");
-            reconnect = false;
-            ws.close();
+            close_connection();
+            stop_keepalive();
         }
     });
 

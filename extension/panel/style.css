@@ -19,11 +19,9 @@ h1 {
 }
 
 #toggle-qr {
-    display: none;
 }
 
 #qrcode {
-    display: none;
     background-color: #FFF;
     border-radius: 25px;
 

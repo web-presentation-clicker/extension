@@ -123,23 +123,29 @@ const onmessage_connected = e => {
         } break;
 
         default: {
-            if (e.data.startsWith('ERR: ')) {
-                error = e.data.substr(5);
-                console.error("error from server: " + error);
-
-                // assume explicit error from server means the session is no longer usable
-                session.error = error;
-                session.exists = false;
-                session.state = SESSION_STATE_DEAD;
-                send_session_state();
-                ws.close();
-            } else {
-                console.log('unknown event from server: ' + e.data);
-                // do nothing about this for now
-            }
+            // handle error, ignore unknown
+            if (e.data.startsWith('ERR: ')) handle_onmessage_error(e);
+            else console.log('unknown event from server: ' + e.data);
         } break;
     }
     
+}
+
+function handle_onmessage_error(e) {
+    let error;
+    if (e.data.startsWith('ERR: ')) {
+        error = e.data.substr(5);
+        console.error("error from server: " + error);
+    } else {
+        error = "unknown error";
+        console.error('unknown event from server: ' + e.data);
+    }
+
+    session.error = error;
+    session.exists = false;
+    session.state = SESSION_STATE_DEAD;
+    send_session_state();
+    ws.close();
 }
 
 // message event handler while creating a new session
@@ -161,20 +167,7 @@ const onmessage_init = e => {
     }
 
     // anything else is an error
-    let error;
-    if (e.data.startsWith('ERR: ')) {
-        error = e.data.substr(5);
-        console.error("error from server: " + error);
-    } else {
-        error = "unknown error";
-        console.error('unknown event from server: ' + e.data);
-    }
-
-    session.error = error;
-    session.exists = false;
-    session.state = SESSION_STATE_DEAD;
-    send_session_state();
-    ws.close();
+    handle_onmessage_error(e);
 };
 
 // message event handler when resuming a session
@@ -190,20 +183,7 @@ const onmessage_resume = e => {
     }
 
     // anything else is an error
-    let error;
-    if (e.data.startsWith('ERR: ')) {
-        error = e.data.substr(5);
-        console.error("error from server: " + error);
-    } else {
-        error = "unknown error";
-        console.error('unknown event from server: ' + e.data);
-    }
-
-    session.error = error;
-    session.exists = false;
-    session.state = SESSION_STATE_DEAD;
-    send_session_state();
-    ws.close();
+    handle_onmessage_error(e);
 };
 
 

@@ -1,4 +1,7 @@
 # Privacy Policy
+
+Last Updated: November 7th, 2024
+
 To facilitate a painless user experience, our browser extension connects to a server. The limitations of the information collected by this transaction is the same as when your browser connects to any other website.
 
 We value your privacy, and only collect information to prevent abuse of our services and gauge user activity. We do not share any personal information with any third-parties.

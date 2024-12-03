@@ -11,7 +11,26 @@
     <div class="text">
         <div class="title-bar">
             <div id="logo"></div>
-            <h1 id="title">Web Presentation Clicker</h1></div>
+            <h1 id="title">Web Presentation Clicker</h1>
+        </div>
+
+        <div id="set-server">
+            <div><b>Use a third-party server:</b></div>
+            <small class="warning">
+                <b>Do not change this unless you know what it does.</b><br>
+            </small>
+            <div class="setting">
+                <input id="server-field" type="text" placeholder="staged.example.com">
+                <button id="update-server">update</button>
+                <button id="reset-server">reset</button>
+            </div>
+        </div>
+
+        <div id="custom-server-message">
+            <small>Using third-party server: <b id="server-addr"></b></small>
+            <button id="change-server">change</button>
+        </div>
+
         <div id="message"></div>
         <button id="toggle-qr">Show QR Code</button>
         <button id="end-session">End Session</button>

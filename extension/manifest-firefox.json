@@ -9,6 +9,9 @@
       "strict_min_version": "112.0"
     }
   },
+  "permissions": [
+    "storage"
+  ],
   "action": {
     "default_popup": "panel/panel.html",
     "theme_icons": [

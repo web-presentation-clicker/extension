@@ -5,6 +5,7 @@
     --button-color: #CCD;
     --button-hover-color: #C0C0D0;
     --button-active-color: #BBD;
+    --logo-url: url("/logo-light-simple.svg");
 }
 
 /* dark theme */
@@ -15,6 +16,7 @@
         --button-color: #404044;
         --button-hover-color: #53535d;
         --button-active-color: #667;
+        --logo-url: url("/logo-dark-simple.svg");
     }
 }
 
@@ -31,11 +33,34 @@ body {
     margin-right: 12px;
 }
 
+.title-bar {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.title-bar > * {
+    display: flex;
+    align-items: center;
+    margin-top: .5rem;
+    margin-bottom: .5rem;
+}
+
+#logo {
+    background-image: var(--logo-url);
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+
+    width: 1.7rem;
+    height: 1.7rem;
+}
+
 h1 {
     font-size: 1.4rem;
 
-    margin-top: .5rem;
-    margin-bottom: 1rem;
+    margin-left: .8rem;
+    margin-right: .8rem;
 }
 
 #qrcode {

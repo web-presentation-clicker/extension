@@ -132,7 +132,7 @@ class SocketListeners {
 
             default: {
                 // handle error, ignore unknown
-                if (e.data.startsWith('ERR: ')) handle_onmessage_error(e);
+                if (e.data.startsWith('ERR: ')) this.handle_onmessage_error(e);
                 else console.log('unknown event from server: ' + e.data);
             } break;
         }
@@ -179,7 +179,7 @@ class SocketListeners {
         }
 
         // anything else is an error
-        handle_onmessage_error(e);
+        this.handle_onmessage_error(e);
     };
 
     // message event handler when resuming a session
@@ -197,7 +197,7 @@ class SocketListeners {
         }
 
         // anything else is an error
-        handle_onmessage_error(e);
+        this.handle_onmessage_error(e);
     };
 
 
@@ -305,7 +305,6 @@ function close_connection() {
         ws.close();
         ws = null;
     }
-    socket_listeners = null;
 }
 
 function end_session() {

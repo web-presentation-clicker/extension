@@ -54,8 +54,6 @@ body {
 
     transition: background-color .4s;
 
-    cursor: pointer;
-
     width: 2.3rem;
     height: 2.3rem;
 }

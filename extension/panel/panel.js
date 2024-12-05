@@ -199,7 +199,7 @@ function init_session() {
     browser.runtime.sendMessage({event: MAKE_SESSION})
         .then((s) => {
             if (s == null) {
-                message.innerHTML = "No presentation found. Supported sites:<br><ul><li>Google Slides</li></ul>"
+                message.innerHTML = "No presentation found. Supported sites:<br><ul><li>Google Slides</li><li>Microsoft PowerPoint 365</li></ul>"
                 return;
             }
             on_session_state(s);

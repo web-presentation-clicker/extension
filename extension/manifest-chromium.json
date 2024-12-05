@@ -20,11 +20,17 @@
     "type": "module"
   },
   "content_scripts": [
-	{
-		"matches": ["https://docs.google.com/presentation/*"],
-		"js": ["content-clicker.js"],
-		"run_at": "document_end"
-	}
+    {
+      "matches": ["https://docs.google.com/presentation/*"],
+      "js": ["content-clicker.js", "clickers/arrow-keys.js", "clickers/slides-clicker.js"],
+      "run_at": "document_end"
+    },
+    {
+      "matches": ["https://powerpoint.officeapps.live.com/*"],
+      "js": ["content-clicker.js", "clickers/arrow-keys.js", "clickers/365-clicker.js"],
+      "run_at": "document_start",
+      "all_frames": true
+    }
   ]
 }
 

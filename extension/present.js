@@ -3,6 +3,7 @@ const MAKE_SESSION = 1;
 const CLICKER_NEXT_SLIDE = 2;
 const CLICKER_PREV_SLIDE = 3;
 const END_SESSION = 4;
+const SETTINGS_UPDATE = 5;
 
 // session states
 const SESSION_STATE_NULL = -1;          // no session ever existed
@@ -10,6 +11,8 @@ const SESSION_STATE_DEAD = 0;           // session existed, but died
 const SESSION_STATE_CONNECTING = 1;     // connecting to server
 const SESSION_STATE_ESTABLISHED = 2;    // requesting session from server
 const SESSION_STATE_ACTIVE = 3;         // session exists on server
+
+const OFFICIAL_SERVER = 'on-stage.click';
 
 const is_chrome = typeof browser === 'undefined';
 if (is_chrome) var browser = chrome;
@@ -30,13 +33,10 @@ let uuid_b64 = null;
 let reconnect = false;
 let nonce = 0;
 
-// devel
-// const baseURL = 'http://localhost:6969';
-// const baseWSURL = 'ws://localhost:6969';
-
-// production
-const baseURL = 'https://on-stage.click';
-const baseWSURL = 'wss://on-stage.click';
+let local_settings = {};
+const get_server = () => typeof local_settings.server === 'undefined' ? OFFICIAL_SERVER : local_settings.server;
+const get_base_url = () => 'https://' + get_server();
+const get_base_ws_url = () => 'wss://' + get_server();
 
 let content_clickers = [];
 
@@ -102,161 +102,199 @@ function send_click(e) {
 }
 
 
-// message event handler after connection is established, handles events
-const onmessage_connected = e => {
-    switch (e.data) {
-        case "hello": {
-            console.log("pinged by clicker");
-            if (!session.presenting) {
-                session.presenting = true;
-                send_session_state();
-            }
-        } break;
+let socket_listeners = null;
+class SocketListeners {
+    // prevent old sessions from breaking new ones
+    is_valid = () => socket_listeners === this;
 
-        case "next_slide": {
-            console.log("next slide");
-            send_click(CLICKER_NEXT_SLIDE);
-        } break;
+    // message event handler after connection is established, handles events
+    onmessage_connected = e => {
+        if (!this.is_valid()) return;
 
-        case "prev_slide": {
-            console.log("prev slide");
-            send_click(CLICKER_PREV_SLIDE);
-        } break;
+        switch (e.data) {
+            case "hello": {
+                console.log("pinged by clicker");
+                if (!session.presenting) {
+                    session.presenting = true;
+                    send_session_state();
+                }
+            } break;
 
-        default: {
-            // handle error, ignore unknown
-            if (e.data.startsWith('ERR: ')) handle_onmessage_error(e);
-            else console.log('unknown event from server: ' + e.data);
-        } break;
-    }
-    
-}
+            case "next_slide": {
+                console.log("next slide");
+                send_click(CLICKER_NEXT_SLIDE);
+            } break;
 
-function handle_onmessage_error(e) {
-    let error;
-    if (e.data.startsWith('ERR: ')) {
-        error = e.data.substr(5);
-        console.error("error from server: " + error);
-    } else {
-        error = "unknown error";
-        console.error('unknown event from server: ' + e.data);
+            case "prev_slide": {
+                console.log("prev slide");
+                send_click(CLICKER_PREV_SLIDE);
+            } break;
+
+            default: {
+                // handle error, ignore unknown
+                if (e.data.startsWith('ERR: ')) handle_onmessage_error(e);
+                else console.log('unknown event from server: ' + e.data);
+            } break;
+        }
+        
     }
 
-    session.error = error;
-    session.exists = false;
-    session.state = SESSION_STATE_DEAD;
-    send_session_state();
-    ws.close();
-}
+    handle_onmessage_error(e) {
+        if (!this.is_valid()) return;
 
-// message event handler while creating a new session
-const onmessage_init = e => {
-    // session created?
-    if (e.data.startsWith('uuid: ')) {
-        console.log("session created");
-        uuid_str = e.data.substr(6);
-        uuid_bytes = decode_uuid(uuid_str);
-        uuid_b64 = encode_b64(uuid_bytes);
+        let error;
+        if (e.data.startsWith('ERR: ')) {
+            error = e.data.substr(5);
+            console.error("error from server: " + error);
+        } else {
+            error = "unknown error";
+            console.error('unknown event from server: ' + e.data);
+        }
 
-        session.url = `${baseURL}/${uuid_b64}`;
-        session.exists = true;
-        session.state = SESSION_STATE_ACTIVE;
-        send_session_state();
-
-        ws.onmessage = onmessage_connected;
-        return;
-    }
-
-    // anything else is an error
-    handle_onmessage_error(e);
-};
-
-// message event handler when resuming a session
-const onmessage_resume = e => {
-    // session resumed?
-    if (e.data == 'resumed') {
-        console.log("session resumed");
-        session.state = SESSION_STATE_ACTIVE;
-        send_session_state();
-
-        ws.onmessage = onmessage_connected;
-        return;
-    }
-
-    // anything else is an error
-    handle_onmessage_error(e);
-};
-
-
-// onopen when creating new session
-const onopen_init = () => {
-    console.log('opened');
-    session.state = SESSION_STATE_ESTABLISHED;
-    send_session_state();
-
-    // ask for session
-    ws.send('v1');
-    ws.send('new');
-};
-
-// onopen when resuming session
-const onopen_resume = () => {
-    console.log('opened');
-    session.state = SESSION_STATE_ESTABLISHED;
-    send_session_state();
-
-    // ask to resume session
-    ws.send('v1');
-    ws.send('resume: ' + uuid_str);
-};
-
-
-// normal onerror and onclose
-const onerror_init = e => {
-    console.error(e);
-};
-
-const onclose_init = e => {
-    console.log('death');
-
-    // if not an explicit death, mark dead and send event
-    if (session.state > SESSION_STATE_DEAD) {
-        session.error = "Lost connection";
+        session.error = error;
+        session.exists = false;
         session.state = SESSION_STATE_DEAD;
         send_session_state();
+        ws.close();
     }
 
-    if (session.exists && reconnect) {
-        console.log('resuming after lost connection');
-        resume_session();
+    // message event handler while creating a new session
+    onmessage_init = e => {
+        if (!this.is_valid()) return;
+
+        // session created?
+        if (e.data.startsWith('uuid: ')) {
+            console.log("session created");
+            uuid_str = e.data.substr(6);
+            uuid_bytes = decode_uuid(uuid_str);
+            uuid_b64 = encode_b64(uuid_bytes);
+
+            session.url = `${get_base_url()}/${uuid_b64}`;
+            session.exists = true;
+            session.state = SESSION_STATE_ACTIVE;
+            send_session_state();
+
+            ws.onmessage = this.onmessage_connected;
+            return;
+        }
+
+        // anything else is an error
+        handle_onmessage_error(e);
+    };
+
+    // message event handler when resuming a session
+    onmessage_resume = e => {
+        if (!this.is_valid()) return;
+
+        // session resumed?
+        if (e.data == 'resumed') {
+            console.log("session resumed");
+            session.state = SESSION_STATE_ACTIVE;
+            send_session_state();
+
+            ws.onmessage = this.onmessage_connected;
+            return;
+        }
+
+        // anything else is an error
+        handle_onmessage_error(e);
+    };
+
+
+    // onopen when creating new session
+    onopen_init = () => {
+        if (!this.is_valid()) return;
+
+        console.log('opened');
+        session.state = SESSION_STATE_ESTABLISHED;
+        send_session_state();
+
+        // ask for session
+        ws.send('v1');
+        ws.send('new');
+    };
+
+    // onopen when resuming session
+    onopen_resume = () => {
+        if (!this.is_valid()) return;
+
+        console.log('opened');
+        session.state = SESSION_STATE_ESTABLISHED;
+        send_session_state();
+
+        // ask to resume session
+        ws.send('v1');
+        ws.send('resume: ' + uuid_str);
+    };
+
+
+    // normal onerror and onclose
+    onerror_init = e => {
+        if (!this.is_valid()) return;
+
+        console.error(e);
+    };
+
+    onclose_init = e => {
+        if (!this.is_valid()) return;
+
+        console.log('death');
+
+        // if not an explicit death, mark dead and send event
+        if (session.state > SESSION_STATE_DEAD) {
+            session.error = "Lost connection";
+            session.state = SESSION_STATE_DEAD;
+            send_session_state();
+        }
+
+        if (session.exists && reconnect) {
+            console.log('resuming after lost connection');
+            resume_session();
+        }
+    };
+
+    attach_new(ws) {
+        ws.onopen = this.onopen_init;
+        ws.onmessage = this.onmessage_init;
+        ws.onerror = this.onerror_init;
+        ws.onclose = this.onclose_init;
     }
-};
+
+    attach_resume(ws) {
+        ws.onopen = this.onopen_resume;
+        ws.onmessage = this.onmessage_resume;
+        ws.onerror = this.onerror_init;
+        ws.onclose = this.onclose_init;
+    }
+}
 
 
 function new_session() {
     close_connection();
+
     reconnect = true;
-    ws = new WebSocket(baseWSURL + "/api/v1/ws");
+    ws = new WebSocket(get_base_ws_url() + "/api/v1/ws");
     session = new_null_session();
     session.state = SESSION_STATE_CONNECTING;
-    ws.onopen = onopen_init;
-    ws.onmessage = onmessage_init;
-    ws.onerror = onerror_init;
-    ws.onclose = onclose_init;
+    
+    socket_listeners = new SocketListeners();
+    socket_listeners.attach_new(ws);
+
     send_session_state();
     start_keepalive();
 }
 
 function resume_session() {
     close_connection();
+
     reconnect = true;
-    ws = new WebSocket(baseWSURL + "/api/v1/ws");
+    ws = new WebSocket(get_base_ws_url() + "/api/v1/ws");
     session.error = null;
     session.state = SESSION_STATE_CONNECTING;
-    ws.onopen = onopen_resume;
-    ws.onmessage = onmessage_resume;
-    ws.onerror = onerror_init;
-    ws.onclose = onclose_init;
+
+    socket_listeners = new SocketListeners();
+    socket_listeners.attach_resume(ws);
+
     send_session_state();
     start_keepalive();
 }
@@ -267,6 +305,7 @@ function close_connection() {
         ws.close();
         ws = null;
     }
+    socket_listeners = null;
 }
 
 function end_session() {
@@ -303,23 +342,39 @@ function stop_keepalive() {
     if (keepalive_interval != null) clearInterval(keepalive_interval);
 }
 
+function mk_session() {
+    // create a session or return the currently active one
+    if (!session.exists) new_session();
+    else if (session.state == SESSION_STATE_DEAD) resume_session();
+}
+
+function update_settings() {
+    return browser.storage.local.get()
+        .then(s => local_settings = s);
+}
 
 browser.runtime.onMessage.addListener(
     (msg, sender, respond) => {
         console.log("bg onmessage", msg);
         switch (msg.event) {
             case MAKE_SESSION: {
-                // create a session or return the currently active one
-                if (!session.exists) {
-                    if (content_clickers.length == 0) {
-                        console.log("no content clickers, refusing to start session");
-                        respond(null);
-                        return;
-                    }
-                    
-                    new_session();
-                } else if (session.state == SESSION_STATE_DEAD) {
-                    resume_session();
+                if (!session.exists && content_clickers.length == 0) {
+                    console.log("no content clickers, refusing to start session");
+                    respond(null);
+                    return;
+                }
+
+                // get baseurl
+                if (typeof local_settings.server === 'undefined') {
+                    console.log('updating settings before making session');
+                    update_settings()
+                        .then(s => {
+                            // make session and send it when done
+                            mk_session();
+                            send_session_state();
+                        });
+                } else {
+                    mk_session();
                 }
 
                 respond(session);
@@ -327,6 +382,11 @@ browser.runtime.onMessage.addListener(
             case END_SESSION: {
                 end_session();
                 respond(session);
+            } break;
+            case SETTINGS_UPDATE: {
+                end_session();
+                update_settings()
+                    .then(() => respond(true));
             } break;
         }
     });

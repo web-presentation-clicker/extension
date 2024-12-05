@@ -1,6 +1,7 @@
 const SESSION_STATE = 0;
 const MAKE_SESSION = 1;
 const END_SESSION = 4;
+const SETTINGS_UPDATE = 5;
 
 // session states
 const SESSION_STATE_NULL = -1;          // no session ever existed
@@ -109,7 +110,10 @@ function set_server(new_server) {
     local_settings.server = new_server;
     browser.storage.local.set(local_settings);
     update_custom_server_message();
-    // todo: update background service after this
+
+    // inform background service and re-initialize the panel
+    browser.runtime.sendMessage({event: SETTINGS_UPDATE})
+        .then(() => init_session());
 }
 
 function show_custom_server_setting() {
@@ -188,7 +192,7 @@ browser.runtime.onMessage.addListener(
         }
     });
 
-function init() {
+function init_session() {
     update_custom_server_message();
 
     // tell background service to get a working session
@@ -206,5 +210,5 @@ function init() {
 browser.storage.local.get()
     .then(s => {
         local_settings = s;
-        init();
+        init_session();
     });
